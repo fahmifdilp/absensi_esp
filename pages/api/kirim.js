@@ -1,32 +1,30 @@
-// api/upload.js
-import { writeFile } from 'fs/promises';
-
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '4mb', // Batas ukuran gambar
-    },
+    bodyParser: false,
   },
 };
 
+import formidable from "formidable";
+import fs from "fs";
+import axios from "axios";
+
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST allowed' });
-  }
+  const form = new formidable.IncomingForm();
 
-  const { image, filename } = req.body;
+  form.parse(req, async (err, fields, files) => {
+    if (err) return res.status(500).json({ error: "Upload gagal" });
 
-  if (!image || !filename) {
-    return res.status(400).json({ error: 'Missing image or filename' });
-  }
+    const filePath = files.file.filepath;
+    const fileData = fs.readFileSync(filePath);
 
-  const base64Data = image.replace(/^data:image\/jpeg;base64,/, '');
-  const filePath = `./public/${filename}`;
-
-  try {
-    await writeFile(filePath, base64Data, 'base64');
-    res.status(200).json({ message: 'Image saved', url: `/public/${filename}` });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to save image', detail: err.message });
-  }
+    // Kirim ke server Flask
+    try {
+      const response = await axios.post("http://<IP_SERVER_FLASK>:5000/recognize", fileData, {
+        headers: { "Content-Type": "image/jpeg" },
+      });
+      res.status(200).json(response.data);
+    } catch (error) {
+      res.status(500).json({ error: "Gagal kirim ke server pengenalan wajah" });
+    }
+  });
 }
