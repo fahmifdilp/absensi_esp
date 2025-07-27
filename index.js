@@ -1,57 +1,28 @@
-import { useState } from "react";
 
 export default function Home() {
-  const [image, setImage] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleUpload = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!image) return;
+    const data = { name: e.target.name.value };
 
-    const formData = new FormData();
-    formData.append("file", image);
+    const res = await fetch("/api/kirim", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      setResult(data);
-    } catch (err) {
-      console.error("Upload error:", err);
-      setResult({ error: "Terjadi kesalahan saat upload" });
-    } finally {
-      setLoading(false);
-    }
+    const result = await res.json();
+    alert("Response: " + result.message);
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: 20 }}>
-      <h1>👤 Sistem Pengenalan Wajah</h1>
-      <form onSubmit={handleUpload}>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setImage(e.target.files[0])}
-        />
-        <br /><br />
-        <button type="submit" disabled={loading}>
-          {loading ? "Mengirim..." : "Kirim Gambar"}
-        </button>
+    <div style={{ padding: "2rem" }}>
+      <h1>Kirim Data ke API</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="text" name="name" placeholder="Masukkan nama" required />
+        <button type="submit">Kirim</button>
       </form>
-
-      {result && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Hasil:</h3>
-          <pre>{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      )}
     </div>
   );
 }
